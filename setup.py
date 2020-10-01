@@ -39,7 +39,7 @@ setup(
     author=meta['author'],
     author_email=meta['author_email'],
     url=meta['url'],
-    license='GPLv3',
+    license=meta['license'],
     description=meta['tagline'],
     long_description=get_long_description(),
     long_description_content_type='text/markdown',
