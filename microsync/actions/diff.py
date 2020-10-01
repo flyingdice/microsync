@@ -18,6 +18,7 @@ def diff(src: Str,
     Responsible displaying a diff between two refs of the template repository.
 
     :param src: Source location of template to retrieve and render
+    :param ref: Version control reference of the source to diff
     :param interactive: Flag indicating execution is interactive and can prompt for user input
     :return: Result of the diff action
     """
