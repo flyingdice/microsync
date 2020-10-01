@@ -1,0 +1,11 @@
+# requirements/base.txt
+#
+# Requirements for using this package.
+
+-r build.txt
+
+dataclasses==0.7; python_version == '3.6'
+cookiecutter==1.7.2
+scratchdir==1.0.2
+sh==1.14.0
+typer==0.3.2
