@@ -5,9 +5,10 @@
     Contains microsync models.
 """
 import dataclasses
+import os
 
-from . import defaults, serde
-from .hints import AnyStr, Int, Nothing, Str, StrAnyDict, StrTuple, Type
+from . import defaults, scratch, serde, utils
+from .hints import AnyStr, FilePath, Int, Nothing, Str, StrAnyDict, StrTuple, Type
 
 
 @dataclasses.dataclass
@@ -16,6 +17,8 @@ class VCS:
     Represents template version control specific state.
     """
     depth: Int = defaults.VCS_DEPTH
+    branch: Str = defaults.VCS_BRANCH
+    origin: Str = defaults.VCS_ORIGIN
     type: Str = defaults.VCS_TYPE
 
 
@@ -69,7 +72,7 @@ class Config:
 @dataclasses.dataclass
 class State(serde.SupportsFileSerde):
     """
-    Represents the state for a repository.
+    Represents the state for a project.
     """
     template: Template
     config: Config = dataclasses.field(default_factory=Config)
@@ -99,3 +102,37 @@ class State(serde.SupportsFileSerde):
         data['template'] = Template(**data['template'])
         data['config'] = Config(**data['config'])
         return cls(**data)
+
+
+class Project:
+    """
+    Represents a project that is managed by microsync.
+
+    Projects track the template source repository, temporary space
+    for rendering/grafting and the project (child) state file.
+    """
+    def __init__(self,
+                 state: State,
+                 state_path: FilePath,
+                 name: Str,
+                 path: FilePath) -> Nothing:
+        self.state = state
+        self.state_path = state_path
+        self.name = name
+        self.path = utils.mkdir(path)
+        self.src_dir = os.path.join(path, 'src')
+        self.tmp_dir = os.path.join(path, 'tmp')
+        self.scratch = scratch.new(self.tmp_dir)
+
+    def __enter__(self) -> 'Project':
+        self.scratch.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Nothing:
+        self.scratch.__exit__(exc_type, exc_val, exc_tb)
+
+    def graft_dir(self) -> Str:
+        return os.path.join(self.scratch.directory(prefix='graft'), self.name)
+
+    def render_dir(self) -> Str:
+        return os.path.join(self.scratch.directory(prefix='render'), self.name)

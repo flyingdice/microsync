@@ -19,6 +19,11 @@ def new(src: FilePath,
     """
     Create a new microsync state with the given values.
 
+    :param src: Template source location
+    :param ref: Version control reference of the source to checkout
+    :param vcs_type: Type of version control system used
+    :param template_type: Type of template engine used
+    :param comparison_type: Type of comparison used
     :return: New microsync state
     """
     return models.State(

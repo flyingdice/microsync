@@ -4,7 +4,7 @@
 
     Contains functionality for the `link` action.
 """
-from .. import config, defaults, porcelain, results, scratch
+from .. import defaults, porcelain, projects, results
 from ..hints import Bool, OptionalStr, Str
 
 
@@ -32,32 +32,29 @@ def link(src: Str,
     :param comparison_type: Type of comparison used
     :return: Result of the link action
     """
-    # Create new state based on user provided options and defaults.
-    state = config.new(src, ref, vcs_type, template_type, comparison_type)
-
-    with scratch.new() as scratch_dir:
-        # Clone template repository locally from source location.
-        repo = porcelain.clone(
+    with projects.new(src, ref, vcs_type, template_type, comparison_type) as project:
+        # Load existing or freshly cloned template source repository.
+        repo = porcelain.repo(
             src,
-            scratch_dir.wd,
+            project.src_dir,
             ref=ref,
-            options=state.template.vcs
+            options=project.state.template.vcs
         )
 
         # Generate context that would be used to render a template.
         context = porcelain.context(
             repo,
-            state.variables,
+            project.state.variables,
             interactive=interactive,
-            options=state.template.engine
+            options=project.state.template.engine
         )
 
         # Update state with dynamic values.
-        state.set_ref(repo.commit_id())
-        state.set_variables(context.variables)
+        project.state.set_ref(repo.commit_id())
+        project.state.set_variables(context.variables)
 
         # Write state out to disk in the rendered template output directory.
-        config.write(state, dst)
+        projects.write(project, dst)
 
-        msg = f'Repository linked to {src} at ref {state.template.ref}'
+        msg = f'Repository linked to {src} at ref {project.state.template.ref}'
         return results.success(stdout=msg)

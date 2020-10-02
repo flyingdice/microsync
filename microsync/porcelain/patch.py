@@ -6,7 +6,7 @@
 """
 import dataclasses
 
-from .. import comparisons, models, results, vcs
+from .. import comparisons, meta, models, results, vcs
 from ..hints import Str
 
 
@@ -46,6 +46,9 @@ def patch(repo: vcs.Repository,
     :param options: VCS options to configure patching
     :return: Result of patch application
     """
-    commit_message = options.message.format(ref=ref)
-    repo.apply_patch(diff.content, commit_message)
+    msg = options.message.format(
+        ref=ref,
+        version=meta.VERSION
+    )
+    repo.apply_patch(diff.content, msg)
     return Patch(repo, diff, ref)

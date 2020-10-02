@@ -22,18 +22,18 @@ app = typer.Typer(
 )
 
 
-@app.command(short_help='Create a new microsync repository')
+@app.command(help='Create a new project')
 def init(
         template: Str = typer.Argument(
             ...,
             metavar='TEMPLATE',
             help='Source template repository, e.g. https://github.com/microsync/example-cookiecutter'
         ),
-        path: Str = typer.Option(
+        project: Str = typer.Option(
             '.',
             '-p',
-            '--path',
-            help='Path to write rendered template repository, e.g. my_project'
+            '--project',
+            help='Path to write new project, e.g. my_project'
         ),
         ref: OptionalStr = typer.Option(
             None,
@@ -57,29 +57,29 @@ def init(
         ),
 ) -> None:
     action = exit_wrapper(results.logger(actions.init))
-    action(template, path, ref, force, interactive=not script)
+    action(template, project, ref, force, interactive=not script)
 
 
-@app.command(short_help='Show the microsync repository status')
+@app.command(help='Show project status')
 def status(
-        path: Str = typer.Argument(
+        project: Str = typer.Argument(
             '.',
-            metavar='PATH',
+            metavar='PROJECT',
             exists=True,
-            help='Path of local repository to get status of, e.g. my_project'
+            help='Path of project to use'
         )
 ) -> None:
     action = exit_wrapper(results.logger(actions.status))
-    action(path)
+    action(project)
 
 
-@app.command(short_help='Show changes between microsync repository refs')
+@app.command(help='Show changes between template refs')
 def diff(
-        path: Str = typer.Argument(
+        project: Str = typer.Argument(
             '.',
-            metavar='PATH',
+            metavar='PROJECT',
             exists=True,
-            help='Path of local repository to sync, e.g. my_project'
+            help='Path of project to use'
         ),
         ref: OptionalStr = typer.Option(
             None,
@@ -96,29 +96,36 @@ def diff(
         ),
 ) -> None:
     action = exit_wrapper(results.logger(actions.diff))
-    action(path, ref, interactive=not script)
+    action(project, ref, interactive=not script)
 
 
-@app.command(short_help='Show changes between local microsync repository and its src ref')
+@app.command(help='Show changes between project and template')
 def drift(
-        path: Str = typer.Argument(
+        project: Str = typer.Argument(
             '.',
-            metavar='PATH',
+            metavar='PROJECT',
             exists=True,
-            help='Path of local repository to sync, e.g. my_project'
+            help='Path of project to use'
+        ),
+        script: Bool = typer.Option(
+            False,
+            '-s',
+            '--script',
+            show_default=False,
+            help='Indicates this is being run as a script and is not interactive',
         )
 ) -> None:
     action = exit_wrapper(results.logger(actions.drift))
-    action(path)
+    action(project, interactive=not script)
 
 
-@app.command(short_help='Sync local microsync repository with its source template')
+@app.command(help='Sync project with its template')
 def sync(
-        path: Str = typer.Argument(
+        project: Str = typer.Argument(
             '.',
-            metavar='PATH',
+            metavar='PROJECT',
             exists=True,
-            help='Path of local repository to sync, e.g. my_project'
+            help='Path of project to use'
         ),
         ref: OptionalStr = typer.Option(
             None,
@@ -135,21 +142,21 @@ def sync(
         )
 ) -> None:
     action = exit_wrapper(results.logger(actions.sync))
-    action(path, ref, interactive=not script)
+    action(project, ref, interactive=not script)
 
 
-@app.command(short_help='Link existing microsync repository to source template that created it')
+@app.command(help='Link existing project to template that previously created it')
 def link(
         template: Str = typer.Argument(
             ...,
             metavar='TEMPLATE',
             help='Source template repository, e.g. https://github.com/microsync/example-cookiecutter'
         ),
-        path: Str = typer.Option(
+        project: Str = typer.Option(
             '.',
             '-p',
-            '--path',
-            help='Path of local repository to link, e.g. my_project'
+            '--project',
+            help='Path of project to use'
         ),
         ref: OptionalStr = typer.Option(
             None,
@@ -166,20 +173,20 @@ def link(
         )
 ) -> None:
     action = exit_wrapper(results.logger(actions.link))
-    action(template, path, ref, interactive=not script)
+    action(template, project, ref, interactive=not script)
 
 
-@app.command(short_help='Unlink an existing repository from its template')
+@app.command(help='Unlink an existing project from its template')
 def unlink(
-        path: Str = typer.Option(
+        project: Str = typer.Option(
             '.',
             '-p',
-            '--path',
-            help='Path of local repository to unlink, e.g. my_project'
+            '--project',
+            help='Path of project to use'
         ),
 ) -> None:
     action = exit_wrapper(results.logger(actions.unlink))
-    action(path)
+    action(project)
 
 
 def exit_wrapper(func):

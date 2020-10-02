@@ -10,6 +10,17 @@ from . import defaults
 from .hints import FilePath, Int, Str
 
 
+def mkdir(path: FilePath) -> FilePath:
+    """
+    Create directory (and all parents) for the given file path.
+
+    :param path: Path to directory
+    :return: Path to directory created
+    """
+    os.makedirs(path, mode=0o755, exist_ok=True)
+    return path
+
+
 def resolve_path(path: FilePath) -> FilePath:
     """
     Resolve the given path into a fully qualified path.

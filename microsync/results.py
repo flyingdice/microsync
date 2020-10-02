@@ -109,6 +109,7 @@ def wrapper(func):
         except errors.StateFileNotFound as ex:
             return error(ex, stderr=f'Not a microsync repository; state file not found "{ex.path}"')
         except Exception as ex:
+            raise ex
             return error(ex, stderr=str(ex))
     return decorator
 

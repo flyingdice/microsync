@@ -5,9 +5,22 @@
     Contains base classes for all version control system implementations.
 """
 import abc
+import contextlib
 
-from .. import defaults, models, results
+from .. import defaults, models, results, utils
 from ..hints import Bool, FilePath, Nothing, OptionalStr, Str, Type, TypeVar
+
+
+def safe_ref(ref: OptionalStr,
+             default: Str = defaults.TEMPLATE_REF) -> Str:
+    """
+    Return the given ref, if it is valid, otherwise fallback to the default.
+
+    :param ref: Ref to use if valid
+    :param default: Default ref
+    :return: Valid ref or default
+    """
+    return ref or default
 
 
 class Repository(metaclass=abc.ABCMeta):
@@ -126,6 +139,38 @@ class Repository(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError('Derived classes must implement this method')
 
+    @abc.abstractmethod
+    def checkout(self: 'RT',
+                 ref: Str = defaults.VCS_BRANCH) -> Nothing:
+        """
+        Switch repository to the version of code defined by ref.
+
+        If ref is not defined, switch to the default version.
+
+        :param ref: Reference to checkout
+        :return: Nothing
+        """
+        raise NotImplementedError('Derived classes must implement this method')
+
+    @contextlib.contextmanager
+    def switch_to(self: 'RT',
+                  ref: Str = defaults.VCS_BRANCH):
+        """
+        Switch repository to the version of code defined by ref for the duration
+        of the context manager scope.
+
+        If ref is not defined, switch to the default version.
+
+        :param ref: Reference to checkout
+        :return: Nothing
+        """
+        commit_id = self.commit_id()
+        try:
+            self.checkout(safe_ref(ref))
+            yield ref
+        finally:
+            self.checkout(commit_id)
+
 
 RT = TypeVar('RT', bound=Repository)
 
@@ -134,6 +179,41 @@ class VersionControl(metaclass=abc.ABCMeta):
     """
     Abstract class that represents a version control system.
     """
+    def get(self,
+            src: Str,
+            dst: Str,
+            ref: OptionalStr = defaults.TEMPLATE_REF,
+            options: models.VCS = models.VCS()) -> Type[RT]:
+        """
+        Create a repository from a local file path.
+        Get a repository from a local file path if it exists, otherwise retrieve
+        it from its remote source location.
+
+        :param src: Source location where repository is located
+        :param dst: Output path where repository should be saved
+        :param ref: Version control reference of the source to checkout
+        :param options: VCS options to use
+        :return: Repository containing code on local file system
+        """
+        dst = utils.resolve_path(dst)
+        ref = safe_ref(ref)
+
+        if self.is_repo_path(dst):
+            return self.local(src, dst, ref, options)
+        else:
+            return self.remote(src, dst, ref, options)
+
+    @staticmethod
+    @abc.abstractmethod
+    def is_repo_path(path: FilePath) -> Bool:
+        """
+        Check to see if the given file path is a valid repository.
+
+        :param path: File path to check
+        :return: True if valid repository path, False otherwise
+        """
+        raise NotImplementedError('Derived classes must implement this method')
+
     @abc.abstractmethod
     def local(self: Type['VT'],
               src: Str,
@@ -152,13 +232,13 @@ class VersionControl(metaclass=abc.ABCMeta):
         raise NotImplementedError('Derived classes must implement this method')
 
     @abc.abstractmethod
-    def get(self: Type['VT'],
-            src: Str,
-            dst: Str,
-            ref: OptionalStr = defaults.TEMPLATE_REF,
-            options: models.VCS = models.VCS()) -> Type[RT]:
+    def remote(self: Type['VT'],
+               src: Str,
+               dst: Str,
+               ref: OptionalStr = defaults.TEMPLATE_REF,
+               options: models.VCS = models.VCS()) -> Type[RT]:
         """
-        Retrieve a repository based on the given configuration.
+        Get a repository from a remote location.
 
         :param src: Source location of repository to retrieve
         :param dst: Output path where repository should be saved

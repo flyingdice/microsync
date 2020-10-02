@@ -6,18 +6,18 @@
 """
 from scratchdir import ScratchDir
 
-from . import defaults
+from . import defaults, utils
 from .hints import FilePath
 
 
-def new(root: FilePath = defaults.SCRATCH_ROOT) -> ScratchDir:
+def new(wd: FilePath) -> ScratchDir:
     """
     Create a new scratch directory for managing temporary files/directories.
 
-    :param root: Directory to bind scratchdir to
+    :param wd: Directory to bind scratchdir to
     :return: Scratch directory
     """
-    return ScratchDir(root=root,
+    return ScratchDir(wd=utils.mkdir(wd),
                       prefix=defaults.SCRATCH_PREFIX,
                       suffix=defaults.SCRATCH_SUFFIX)
 

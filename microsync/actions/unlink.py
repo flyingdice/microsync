@@ -4,24 +4,24 @@
 
     Contains functionality for the `unlink` action.
 """
-from .. import config, results
+from .. import config, projects, results
 from ..hints import Str
 
 
 @results.wrapper
-def unlink(src: Str) -> results.Result:
+def unlink(path: Str) -> results.Result:
     """
     Responsible for removing the linkage between a repository and
     the template repository it was previously created/updated from.
 
     Simply put, this destroys the microsync state necessary to maintain the linkage.
 
-    :param src: Path to local repository to unlink
+    :param path: Path to project
     :return: Result of the unlink action
     """
-    state = config.read(src)
+    with projects.read(path) as project:
+        projects.delete(project)
 
-    config.delete(src)
-
-    msg = f'Repository unlinked from {state.template.src} at ref {state.template.ref}'
+    msg = (f'Repository unlinked from {project.state.template.src} '
+           f'at ref {project.state.template.ref}')
     return results.success(stdout=msg)

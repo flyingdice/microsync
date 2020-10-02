@@ -4,7 +4,7 @@
 
     Contains functionality for the `init` action.
 """
-from .. import config, defaults, porcelain, results, scratch
+from .. import defaults, porcelain, projects, results
 from ..hints import Bool, OptionalStr, Str
 
 
@@ -31,37 +31,34 @@ def init(src: Str,
     :param comparison_type: Type of comparison used
     :return: Result of the init action
     """
-    # Create new state based on user provided options and defaults.
-    state = config.new(src, ref, vcs_type, template_type, comparison_type)
-
-    with scratch.new() as scratch_dir:
+    with projects.new(src, ref, vcs_type, template_type, comparison_type) as project:
         # Load existing or freshly cloned template source repository.
         repo = porcelain.repo(
             src,
-            scratch_dir.wd,
+            project.src_dir,
             ref=ref,
-            options=state.template.vcs
+            options=project.state.template.vcs
         )
 
         # Render template repo into destination location.
         rendered = porcelain.render(
             repo,
             dst,
-            state.variables,
+            project.state.variables,
             force=force,
             interactive=interactive,
-            options=state.template.engine
+            options=project.state.template.engine
         )
 
         # Update state with dynamic values.
-        state.set_ref(repo.commit_id())
-        state.set_variables(rendered.context.variables)
+        project.state.set_ref(repo.commit_id())
+        project.state.set_variables(rendered.context.variables)
 
         # Write state out to disk in the rendered template output directory.
-        config.write(state, rendered.path)
+        projects.write(project, rendered.path)
 
-        msg = ('Initialized microsync repository in'
-               f'{rendered.path}'
-               f'for {state.template.src} at ref {state.template.ref}')
+        msg = ('Initialized microsync project in '
+               f'{rendered.path} '
+               f'for {project.state.template.src} at ref {project.state.template.ref}')
 
         return results.success(stdout=msg)

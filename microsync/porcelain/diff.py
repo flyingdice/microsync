@@ -47,7 +47,7 @@ def graft(layout: FilePath,
           dst: FilePath,
           options: models.Comparison) -> FilePath:
     """
-    Based on files/directories defined in layout, copy files that exist in src to dst.
+    Based on files/directories defined in layout, copy files/directories that exist in src to dst.
 
     :param layout: Directory that defines file/subdir layout of files
     :param src: Directory that contains files to be copied

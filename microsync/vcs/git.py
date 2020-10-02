@@ -118,7 +118,7 @@ class Repository(base.Repository):
         :return: Nothing
         """
         LOG.info('Hard reset for %s', self)
-        self.git.reset('--hard', 'origin/master')
+        self.git.reset('--hard', self.options.origin)
 
     def update(self) -> Nothing:
         """
@@ -127,14 +127,34 @@ class Repository(base.Repository):
         :return: Nothing
         """
         LOG.info('Checkout and pull master for %s', self)
-        self.git.checkout('master')
+        self.git.checkout(self.options.branch)
         self.git.pull()
+
+    def checkout(self,
+                 ref: Str = defaults.VCS_BRANCH) -> Nothing:
+        """
+        Switch repository to the version of code defined by ref.
+
+        :param ref: Reference to checkout
+        :return: Nothing
+        """
+        LOG.info('Checking out ref %s for %s', ref, self)
+        self.git.checkout(base.safe_ref(ref))
 
 
 class VersionControl(base.VersionControl):
     """
     Class that represents the `git` version control system.
     """
+    def is_repo_path(self, path: FilePath) -> Bool:
+        """
+        Check to see if the given file path is a valid repository.
+
+        :param path: File path to check
+        :return: True if valid repository path, False otherwise
+        """
+        return os.path.exists(os.path.join(path, '.git'))
+
     def local(self,
               src: Str,
               dst: Str,
@@ -150,15 +170,22 @@ class VersionControl(base.VersionControl):
         :return: Repository containing code on local file system
         """
         dst = utils.resolve_path(dst)
-        return Repository(self, src, dst, ref=ref, options=options)
 
-    def get(self,
-            src: Str,
-            dst: Str,
-            ref: OptionalStr = defaults.TEMPLATE_REF,
-            options: models.VCS = models.VCS()) -> Repository:
+        repo = Repository(self, src, dst, ref, options)
+        repo.update()
+
+        if ref:
+            repo.checkout(ref)
+
+        return repo
+
+    def remote(self,
+               src: Str,
+               dst: Str,
+               ref: OptionalStr = defaults.TEMPLATE_REF,
+               options: models.VCS = models.VCS()) -> Repository:
         """
-        Retrieve a repository based on the given configuration.
+        Get a repository from a remote location.
 
         :param src: Source location of repository to retrieve
         :param dst: Output path where repository should be saved
@@ -166,23 +193,10 @@ class VersionControl(base.VersionControl):
         :param options: VCS options to use
         :return: Repository containing code on local file system
         """
-        dst = os.path.join(dst, repo_name(src))
+        dst = utils.resolve_path(dst)
 
-        LOG.info('Cloning %s to %s with depth=%s', src, dst, options.depth)
         sh.git.clone(src, dst, depth=options.depth)
-
         if ref:
-            LOG.info('Checking out ref %s', ref)
             sh.git.checkout(ref, _cwd=dst)
 
         return Repository(self, src, dst, ref, options)
-
-
-def repo_name(src: Str) -> Str:
-    """
-    Get name of repository from template source.
-
-    :param src:
-    :return:
-    """
-    return os.path.splitext(os.path.basename(src))[0]
