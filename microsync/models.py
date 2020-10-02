@@ -7,7 +7,7 @@
 import dataclasses
 import os
 
-from . import defaults, scratch, serde, utils
+from . import defaults, errors, scratch, serde, utils
 from .hints import AnyStr, FilePath, Int, Nothing, Str, StrAnyDict, StrTuple, Type
 
 
@@ -62,9 +62,9 @@ class Template:
 
 
 @dataclasses.dataclass
-class Config:
+class Meta:
     """
-    Represents the microsync config for a repository.
+    Represents the microsync meta for a repository.
     """
     version: Str = defaults.MICROSYNC_VERSION
 
@@ -75,7 +75,7 @@ class State(serde.SupportsFileSerde):
     Represents the state for a project.
     """
     template: Template
-    config: Config = dataclasses.field(default_factory=Config)
+    meta: Meta = dataclasses.field(default_factory=Meta)
     variables: StrAnyDict = dataclasses.field(default_factory=dict)
 
     def set_ref(self, ref: Str) -> Nothing:
@@ -94,14 +94,18 @@ class State(serde.SupportsFileSerde):
         :return: Instance created from decoded JSON string
         :rtype: :class:`~microsync.models.State`
         """
-        data = serde.loads(s)
-        data['template']['comparison'] = Comparison(**data['template']['comparison'])
-        data['template']['engine'] = Engine(**data['template']['engine'])
-        data['template']['patch'] = Patch(**data['template']['patch'])
-        data['template']['vcs'] = VCS(**data['template']['vcs'])
-        data['template'] = Template(**data['template'])
-        data['config'] = Config(**data['config'])
-        return cls(**data)
+        try:
+            data = serde.loads(s)
+            data['template']['comparison'] = Comparison(**data['template']['comparison'])
+            data['template']['engine'] = Engine(**data['template']['engine'])
+            data['template']['patch'] = Patch(**data['template']['patch'])
+            data['template']['vcs'] = VCS(**data['template']['vcs'])
+            data['template'] = Template(**data['template'])
+            data['meta'] = Meta(**data['meta'])
+        except KeyError as ex:
+            raise errors.StateFileFieldMissing(''.join(ex.args))
+        else:
+            return cls(**data)
 
 
 class Project:

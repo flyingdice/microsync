@@ -4,7 +4,8 @@
 
     Contains microsync specific exceptions.
 """
-from . import hints, loggers
+from . import loggers
+from .hints import FilePath, Nothing, Str
 
 LOG = loggers.get_logger()
 
@@ -15,13 +16,30 @@ class MicrosyncException(Exception):
     """
 
 
-class StateFileException(MicrosyncException):
+class StateException(MicrosyncException):
+    """
+    Base exception class for all microsync state related exceptions.
+    """
+
+
+class StateFileFieldMissing(StateException):
+    """
+    Exception raised when the state file is missing an expected field.
+    """
+    template = 'State missing required field: "{}"'
+
+    def __init__(self, field: Str):
+        self.field = field
+        super().__init__(self.template.format(self.field))
+
+
+class StateFileException(StateException):
     """
     Base exception class for all state file related exceptions.
     """
     template = 'State file error using "{}"'
 
-    def __init__(self, path: hints.FilePath):
+    def __init__(self, path: FilePath):
         self.path = str(path)
         super().__init__(self.template.format(self.path))
 
@@ -52,7 +70,7 @@ class TemplateTypeNotSupported(TemplateException):
     """
     template = 'Template type "{}" is not supported'
 
-    def __init__(self, template_type: hints.Str) -> hints.Nothing:
+    def __init__(self, template_type: Str) -> Nothing:
         self.template_type = template_type
         super().__init__(self.template.format(self.template_type))
 
@@ -63,7 +81,7 @@ class TemplateSourceInvalid(TemplateException):
     """
     template = 'Template src "{}" is not invalid'
 
-    def __init__(self, src: hints.Str) -> hints.Nothing:
+    def __init__(self, src: Str) -> Nothing:
         self.src = src
         super().__init__(self.template.format(self.src))
 
@@ -81,7 +99,7 @@ class RenderedTemplateDirectoryExists(RenderedTemplateException):
     """
     template = 'Rendered template output directory "{}" already exists'
 
-    def __init__(self, path: hints.FilePath):
+    def __init__(self, path: FilePath):
         self.path = str(path)
         super().__init__(self.template.format(self.path))
 
@@ -98,7 +116,7 @@ class VCSTypeNotSupported(VCSException):
     """
     template = 'VCS type "{}" is not supported'
 
-    def __init__(self, vcs_type: hints.Str) -> hints.Nothing:
+    def __init__(self, vcs_type: Str) -> Nothing:
         self.vcs_type = vcs_type
         super().__init__(self.template.format(self.vcs_type))
 
@@ -115,7 +133,7 @@ class ComparisonTypeNotSupported(ComparisonException):
     """
     template = 'Comparison type "{}" is not supported'
 
-    def __init__(self, comparison_type: hints.Str) -> hints.Nothing:
+    def __init__(self, comparison_type: Str) -> Nothing:
         self.comparison_type = comparison_type
         super().__init__(self.template.format(self.comparison_type))
 
