@@ -22,6 +22,13 @@ class StateException(MicrosyncException):
     """
 
 
+class StateContentMalformed(StateException):
+    """
+    Exception raised when the state string cannot be properly read.
+    """
+    template = 'State content malformed'
+
+
 class StateFileFieldMissing(StateException):
     """
     Exception raised when the state file is missing an expected field.
@@ -52,6 +59,13 @@ class StateFileMalformed(StateFileException):
 
 
 class StateFileNotFound(StateFileException):
+    """
+    Exception raised when the state file cannot be found.
+    """
+    template = 'State file not found at "{}"'
+
+
+class ProjectNotFound(StateFileException):
     """
     Exception raised when the state file cannot be found.
     """
