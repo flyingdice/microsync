@@ -59,6 +59,6 @@ def graft(layout: FilePath,
         src,
         dst,
         symlinks=True,
-        ignore=ignore.ignore_names_missing(layout, options)
+        ignore=ignore.ignore_names_missing(layout, src, options)
     )
     return dst
