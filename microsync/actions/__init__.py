@@ -12,4 +12,12 @@ from .status import status
 from .sync import sync
 from .unlink import unlink
 
-__all__ = ['diff', 'drift', 'init', 'link', 'status', 'sync', 'unlink']
+__all__ = [
+    'diff',
+    'drift',
+    'init',
+    'link',
+    'status',
+    'sync',
+    'unlink'
+]
