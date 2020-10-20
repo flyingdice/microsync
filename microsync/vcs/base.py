@@ -94,6 +94,18 @@ class Repository(metaclass=abc.ABCMeta):
         raise NotImplementedError('Derived classes must implement this method')
 
     @abc.abstractmethod
+    def remote_url(self) -> Str:
+        """
+        Retrieve the URL for the remote server where this repository is stored.
+
+        This value should be identical to 'src' but can be leveraged for retrieving
+        the value from the local file system when not available.
+
+        :return: Repository remote URL.
+        """
+        raise NotImplementedError('Derived classes must implement this method')
+
+    @abc.abstractmethod
     def commit_id(self: 'RT') -> Str:
         """
         Retrieve identifier for the current commit on the local.
@@ -136,6 +148,30 @@ class Repository(metaclass=abc.ABCMeta):
         Pull down and merge any remote modifications.
 
         :return: Nothing
+        """
+        raise NotImplementedError('Derived classes must implement this method')
+
+    @abc.abstractmethod
+    def create_branch(self,
+                      name: Str) -> results.Result:
+        """
+        Create a new branch in the repository.
+
+        :param name: Name of the branch
+        :return: Result indicating branch creation status
+        """
+        raise NotImplementedError('Derived classes must implement this method')
+
+    @abc.abstractmethod
+    def push_branch(self,
+                    remote: Str,
+                    name: Str) -> results.Result:
+        """
+        Push a new branch to the remote repository.
+
+        :param remote: Remote repository name
+        :param name: Name of the branch
+        :return: Result indicating branch push status
         """
         raise NotImplementedError('Derived classes must implement this method')
 
@@ -211,6 +247,17 @@ class VersionControl(metaclass=abc.ABCMeta):
 
         :param path: File path to check
         :return: True if valid repository path, False otherwise
+        """
+        raise NotImplementedError('Derived classes must implement this method')
+
+    @staticmethod
+    @abc.abstractmethod
+    def repo_url(path: FilePath) -> Str:
+        """
+        Retrieve the URL for the remote server where this repository is stored
+        for the given repository file path.
+
+        :return: Repository remote URL.
         """
         raise NotImplementedError('Derived classes must implement this method')
 

@@ -82,6 +82,17 @@ class Repository(base.Repository):
         self.git.apply('--3way', _in=patch)
         return self.git.commit('-m', commit_message, '--signoff')
 
+    def remote_url(self) -> Str:
+        """
+        Retrieve the URL for the remote server where this repository is stored.
+
+        This value should be identical to 'src' but can be leveraged for retrieving
+        the value from the local file system when not available.
+
+        :return: Repository remote URL.
+        """
+        return self.git.remote('get-url', 'origin').stdout.decode('utf-8').strip()
+
     def commit_id(self) -> Str:
         """
         Retrieve identifier for the current commit.
@@ -118,6 +129,7 @@ class Repository(base.Repository):
         :return: Nothing
         """
         LOG.info('Hard reset for %s', self)
+        self.git.clean('--force', '-d', '-x')
         self.git.reset('--hard', self.options.origin)
 
     def update(self) -> Nothing:
@@ -129,6 +141,31 @@ class Repository(base.Repository):
         LOG.info('Checkout and pull master for %s', self)
         self.git.checkout(self.options.branch)
         self.git.pull()
+
+    def create_branch(self,
+                      name: Str) -> results.Result:
+        """
+        Create a new branch in the repository.
+
+        :param name: Name of the branch
+        :return: Result indicating branch creation status
+        """
+        LOG.info('Checking out new branch %s for %s', name, self)
+        self.reset()
+        return self.git.checkout('-b', name)
+
+    def push_branch(self,
+                    remote: Str,
+                    name: Str) -> results.Result:
+        """
+        Push a new branch to the remote repository.
+
+        :param remote: Remote repository name
+        :param name: Name of the branch
+        :return: Result indicating branch push status
+        """
+        LOG.info('Pushing branch %s to %s/%s for %s', name, remote, name, self)
+        return self.git.push(remote, name)
 
     def checkout(self,
                  ref: Str = defaults.VCS_BRANCH) -> Nothing:
@@ -154,6 +191,15 @@ class VersionControl(base.VersionControl):
         :return: True if valid repository path, False otherwise
         """
         return os.path.exists(os.path.join(path, '.git'))
+
+    def repo_url(self, path: FilePath) -> Str:
+        """
+        Retrieve the URL for the remote server where this repository is stored
+        for the given repository file path.
+
+        :return: Repository remote URL.
+        """
+        return sh.git.remote('get-url', 'origin', _cwd=path, _tty_out=False).stdout.decode('utf-8').strip()
 
     def local(self,
               src: Str,
@@ -195,8 +241,8 @@ class VersionControl(base.VersionControl):
         """
         dst = utils.resolve_path(dst)
 
-        sh.git.clone(src, dst, depth=options.depth)
+        sh.git.clone(src, dst, depth=options.depth, _tty_out=False)
         if ref:
-            sh.git.checkout(ref, _cwd=dst)
+            sh.git.checkout(ref, _cwd=dst, _tty_out=False)
 
         return Repository(self, src, dst, ref, options)
