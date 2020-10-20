@@ -5,17 +5,148 @@
     Contains functionality for managing projects.
 """
 import os
-from urllib.parse import urlparse
 
-from . import config, defaults, errors, models, utils
-from .hints import Bool, FilePath, Int, Nothing, Str
+from . import config, defaults, descriptors, porcelain, scratch, utils, vcs
+from .hints import Bool, FilePath, Int, Nothing, Optional, Str
 
 
-def new(src: FilePath,
-        ref: Str,
-        vcs_type: Str,
-        template_type: Str,
-        comparison_type: Str) -> models.Project:
+class Project:
+    """
+    Represents a microsync project.
+
+    Projects exist in the following environments:
+
+    1) A user-managed directory, e.g. the current working directory.
+        In this situation, the user provides a path a local copy of their code repository.
+    2) A microsync-managed directory, e.g. .microsync/github.com/my-org/my-template
+        In this situation, microsync has made a local copy of a code repository on the file
+        system. This repository is either the template for the user-managed directory, or
+        one created from a 'src' URI.
+    """
+    def __init__(self,
+                 name: Str,
+                 path: FilePath,
+                 state: config.State,
+                 state_path: FilePath,
+                 src: Str = None,
+                 src_dir: Optional[FilePath] = None,
+                 tmp_dir: Optional[FilePath] = None) -> Nothing:
+        self.name = name
+        self.path = path
+        self.state = state
+        self.state_path = state_path
+        self.src = src or state.template.src
+        self.src_dir = src_dir or os.path.join(path, 'src')
+        self.tmp_dir = tmp_dir or os.path.join(path, 'tmp')
+        self.scratch = scratch.new(self.tmp_dir)
+
+    def __enter__(self) -> 'Project':
+        self.scratch.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Nothing:
+        self.scratch.__exit__(exc_type, exc_val, exc_tb)
+
+    @descriptors.cached
+    def repo(self) -> vcs.Repository:
+        """
+        Repository for the project.
+
+        :return: Repository
+        """
+        return porcelain.repo(
+            src=self.src,
+            dst=self.src_dir,
+            options=self.state.template.vcs
+        )
+
+    @descriptors.cached
+    def template(self) -> 'Template':
+        """
+        Template for the project.
+
+        :return: Template
+        """
+        return template_from_state(self.state)
+
+    def graft_dir(self) -> Str:
+        """
+        Create project specific temporary directory used for grafting.
+
+        :return: Path to directory
+        """
+        return os.path.join(self.scratch.directory(prefix='graft'), self.name)
+
+    def render_dir(self) -> Str:
+        """
+        Create project specific temporary directory used for rendering.
+
+        :return: Path to directory
+        """
+        return os.path.join(self.scratch.directory(prefix='render'), self.name)
+
+
+class Template:
+    """
+
+    """
+    def __init__(self,
+                 name: Str,
+                 path: FilePath,
+                 state: config.State) -> Nothing:
+        self.name = name
+        self.path = path
+        self.state = state
+        self.src_dir = os.path.join(path, 'src')
+        self.tmp_dir = os.path.join(path, 'tmp')
+        self.scratch = scratch.new(self.tmp_dir)
+
+    def __enter__(self) -> 'Template':
+        self.scratch.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Nothing:
+        self.scratch.__exit__(exc_type, exc_val, exc_tb)
+
+    @descriptors.cached
+    def repo(self):
+        return porcelain.repo(
+            self.state.template.src,
+            self.src_dir,
+            ref=self.state.template.ref,
+            options=self.state.template.vcs
+        )
+
+    def graft_dir(self) -> Str:
+        return os.path.join(self.scratch.directory(prefix='graft'), self.name)
+
+    def render_dir(self) -> Str:
+        return os.path.join(self.scratch.directory(prefix='render'), self.name)
+
+
+def template_from_state(state: config.State) -> Template:
+    """
+
+    :param state:
+    :return:
+    """
+    name = utils.src_to_name(state.template.src)
+    path = utils.src_to_path(state.template.src)
+    return Template(name, path, state)
+    # path = os.path.dirname(path)
+    # name = os.path.basename(path)
+    # template_path = utils.src_to_src_path(state.template.src)
+    #
+    # #name = src_to_name(state.template.src)
+    # #path = src_to_path(state.template.src)
+    # return from_state(state, name, path, template_path, state_path)
+
+
+def new(src: Str,
+        ref: Str = defaults.TEMPLATE_REF,
+        vcs_type: Str = defaults.VCS_TYPE,
+        template_type: Str = defaults.TEMPLATE_TYPE,
+        comparison_type: Str = defaults.COMPARISON_TYPE) -> Project:
     """
 
     :param src: Template source location
@@ -26,7 +157,10 @@ def new(src: FilePath,
     :return: New project for the given config
     """
     state = config.new(src, ref, vcs_type, template_type, comparison_type)
-    return from_state(state)
+    name = src_to_name(src)
+    path = src_to_path(src)
+    template_path = src_to_src_path(src)
+    return from_state(state, name, path, template_path)
 
 
 def exists(path: FilePath) -> Bool:
@@ -39,19 +173,92 @@ def exists(path: FilePath) -> Bool:
     return os.path.exists(path)
 
 
-def read(path: FilePath) -> models.Project:
+def read(path: FilePath) -> Project:
     """
     Create project from the given file path.
 
     :param path: Path to project/project state file to read
     :return: Project at the given file path
     """
-    path = config.resolve_path(path)
-    state = config.read(path)
-    return from_state(state, path)
+    reader = read_cache if utils.within_root(path) else read_local
+    return reader(path)
+
+    # from cli is will be root path
+    # from app it will be src path
+
+    # name = os.path.basename(path)
+    # state_path = config.resolve_path(path)
+    # state = config.read(state_path)
+    # #template_path = utils.src_to_src_path(state.template.src)
+    #
+    # #name = src_to_name(state.template.src)
+    # #path = src_to_path(state.template.src)
+    # return from_state(state, name, path, state_path)
 
 
-def write(project: models.Project,
+def read_local(path: FilePath) -> Project:
+    """
+
+    :param path:
+    :return:
+    """
+    print('READING LOCAL PROJECT')
+    # TODO - this needs to be given the 'src' to use.
+    path = utils.resolve_path(path)
+    name = os.path.basename(path)
+    state_path = config.resolve_path(path)
+    state = config.read(state_path)
+    src = porcelain.remote_url(path, state.template.vcs)
+
+#    vc = vcs.vcs(state.template.vcs)
+#    print(vc)
+
+
+
+
+    src_dir = path
+    #src_dir = utils.src_to_src_path(src)
+    tmp_dir = utils.src_to_tmp_path(src)
+
+    print(locals())
+
+    return Project(name, path, state, state_path, src, src_dir, tmp_dir)
+    #template_path = utils.src_to_src_path(state.template.src)
+
+    #name = src_to_name(state.template.src)
+    #path = src_to_path(state.template.src)
+#    return from_state(state, name, path, state_path)
+
+
+def read_cache(path: FilePath) -> Project:
+    """
+    ITS ASSUMED GIVEN PATH ../src dir
+    :param path:
+    :return:
+    """
+    print('READING CACHE PROJECT')
+    path = utils.resolve_path(path)
+    state_path = config.resolve_path(path)
+    state = config.read(state_path)
+    path = os.path.dirname(path)
+    name = os.path.basename(path)
+    src_dir = os.path.join(path, 'src')
+    tmp_dir = os.path.join(path, 'tmp')
+    print(locals())
+    src = porcelain.remote_url(src_dir, state.template.vcs)
+    #template_path = utils.src_to_src_path(state.template.src)
+
+    print(locals())
+
+    return Project(name, path, state, state_path, src, src_dir, tmp_dir)
+
+
+    #name = src_to_name(state.template.src)
+    #path = src_to_path(state.template.src)
+    #return from_state(state, name, path, state_path)
+
+
+def write(project: Project,
           path: FilePath) -> Int:
     """
     Write microsync project to the given path.
@@ -63,7 +270,7 @@ def write(project: models.Project,
     return config.write(project.state, path)
 
 
-def delete(project: models.Project) -> Nothing:
+def delete(project: Project) -> Nothing:
     """
     Delete the given microsync project.
 
@@ -74,8 +281,10 @@ def delete(project: models.Project) -> Nothing:
     return config.delete(project.state_path)
 
 
-def from_state(state: models.State,
-               state_path: FilePath = defaults.STATE_FILE) -> models.Project:
+def from_state(state: config.State,
+               name: Str,
+               path: FilePath,
+               state_path: FilePath = defaults.STATE_FILE) -> Project:
     """
     Create project from the given microsync state.
 
@@ -83,51 +292,17 @@ def from_state(state: models.State,
     :param state_path: Path where state file was read
     :return: Project
     """
-    name = src_to_name(state.template.src)
-    path = src_to_path(state.template.src)
-    return models.Project(state, state_path, name, path)
+    #name = src_to_name(state.template.src)
+    #path = src_to_path(state.template.src)
+    print(f'projects.from_state {name} {path} {state_path}')
+    return Project(name, path, state, state_path)
+    #return Project(state, state_path, name, path, template_path)
 
 
-def src_to_name(src: Str) -> Str:
-    """
-    Get name of repository from template src.
-
-    Ex: https://github.com/ahawker/example-cookiecutter -> example-cookiecutter
-
-    :param src: Template src to parse
-    :return: Repository name
-    """
-    return os.path.splitext(os.path.basename(src))[0]
+src_to_name = utils.src_to_name
+src_to_full_name = utils.src_to_full_name
+src_to_path = utils.src_to_path
+src_to_src_path = utils.src_to_src_path
 
 
-def src_to_path(src: Str,
-                root: FilePath = defaults.MICROSYNC_ROOT) -> FilePath:
-    """
-    Convert a template src value into a file path where it should be saved.
 
-    Supported formats:
-    * git@github.com:microsync/example-cookiecutter.git
-    * https://github.com/microsync/example-cookiecutter
-    * file://some/path/to/repo
-
-    :param src: Template src to parse
-    :param root: File path root where template src should be saved
-    :return: Absolute file path for template src to be saved
-    """
-    url = urlparse(src)
-
-    if url.scheme == 'file':
-        path = os.path.join(root, 'file', url.path.lstrip('/'))
-        return utils.resolve_path(path)
-
-    if url.scheme.startswith('http'):
-        path = os.path.join(root, url.netloc, url.path.lstrip('/'))
-        return utils.resolve_path(path)
-
-    if url.scheme == '' and url.path.startswith('git@'):
-        parts = url.path.strip('.git').split(':')
-        netloc = parts[0].split('@')[1]
-        path = os.path.join(root, netloc, parts[1])
-        return utils.resolve_path(path)
-
-    raise errors.TemplateSourceInvalid(src)
