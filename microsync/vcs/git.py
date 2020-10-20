@@ -9,7 +9,7 @@ import os
 
 import sh
 
-from .. import defaults, models, results, utils
+from .. import config, defaults, results, utils
 from ..hints import Bool, FilePath, Nothing, OptionalStr, Str
 from . import base
 
@@ -25,7 +25,7 @@ class Repository(base.Repository):
                  src: Str,
                  path: FilePath,
                  ref: OptionalStr,
-                 options: models.VCS) -> Nothing:
+                 options: config.VCS) -> Nothing:
         super().__init__(vc, src, path, ref, options)
         self.git = sh.git.bake('--no-pager', _cwd=self.path, _tty_out=False)
 
@@ -159,7 +159,7 @@ class VersionControl(base.VersionControl):
               src: Str,
               dst: Str,
               ref: OptionalStr = defaults.TEMPLATE_REF,
-              options: models.VCS = models.VCS()) -> Repository:
+              options: config.VCS = config.VCS()) -> Repository:
         """
         Create a repository from a local file path.
 
@@ -183,7 +183,7 @@ class VersionControl(base.VersionControl):
                src: Str,
                dst: Str,
                ref: OptionalStr = defaults.TEMPLATE_REF,
-               options: models.VCS = models.VCS()) -> Repository:
+               options: config.VCS = config.VCS()) -> Repository:
         """
         Get a repository from a remote location.
 

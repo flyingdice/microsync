@@ -7,7 +7,7 @@
 import abc
 import contextlib
 
-from .. import defaults, models, results, utils
+from .. import config, defaults, results, utils
 from ..hints import Bool, FilePath, Nothing, OptionalStr, Str, Type, TypeVar
 
 
@@ -32,7 +32,7 @@ class Repository(metaclass=abc.ABCMeta):
                  src: Str,
                  path: FilePath,
                  ref: OptionalStr,
-                 options: models.VCS) -> Nothing:
+                 options: config.VCS) -> Nothing:
         self.vc = vc
         self.src = src
         self.path = path
@@ -183,7 +183,7 @@ class VersionControl(metaclass=abc.ABCMeta):
             src: Str,
             dst: Str,
             ref: OptionalStr = defaults.TEMPLATE_REF,
-            options: models.VCS = models.VCS()) -> Type[RT]:
+            options: config.VCS = config.VCS()) -> Type[RT]:
         """
         Create a repository from a local file path.
         Get a repository from a local file path if it exists, otherwise retrieve
@@ -219,7 +219,7 @@ class VersionControl(metaclass=abc.ABCMeta):
               src: Str,
               dst: Str,
               ref: OptionalStr = defaults.TEMPLATE_REF,
-              options: models.VCS = models.VCS()) -> Type[RT]:
+              options: config.VCS = config.VCS()) -> Type[RT]:
         """
         Create a repository from a local file path.
 
@@ -236,7 +236,7 @@ class VersionControl(metaclass=abc.ABCMeta):
                src: Str,
                dst: Str,
                ref: OptionalStr = defaults.TEMPLATE_REF,
-               options: models.VCS = models.VCS()) -> Type[RT]:
+               options: config.VCS = config.VCS()) -> Type[RT]:
         """
         Get a repository from a remote location.
 

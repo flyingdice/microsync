@@ -4,7 +4,7 @@
 
     Contains porcelain functions for rendering.
 """
-from .. import defaults, models, templates, vcs
+from .. import config, defaults, templates, vcs
 from ..hints import Bool, Str, StrAnyDict
 
 
@@ -13,7 +13,7 @@ def render(repo: vcs.Repository,
            variables: StrAnyDict,
            force: Bool = defaults.RENDER_FORCE,
            interactive: Bool = defaults.RENDER_INTERACTIVE,
-           options: models.Engine = models.Engine()) -> templates.RenderedTemplate:
+           options: config.Engine = config.Engine()) -> templates.RenderedTemplate:
     """
     Porcelain function for `render`.
 
@@ -38,7 +38,7 @@ def render_context(repo: vcs.Repository,
                    path: Str,
                    context: templates.TemplateContext,
                    force: Bool = defaults.RENDER_FORCE,
-                   options: models.Engine = models.Engine()) -> templates.RenderedTemplate:
+                   options: config.Engine = config.Engine()) -> templates.RenderedTemplate:
     """
     Porcelain function for `render_context`.
 

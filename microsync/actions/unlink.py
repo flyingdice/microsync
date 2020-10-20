@@ -4,7 +4,7 @@
 
     Contains functionality for the `unlink` action.
 """
-from .. import config, projects, results
+from .. import projects, results
 from ..hints import Str
 
 

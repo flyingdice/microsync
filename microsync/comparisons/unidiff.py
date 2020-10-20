@@ -6,7 +6,7 @@
 """
 import sh
 
-from .. import models
+from .. import config
 from ..hints import FilePath, Str, StrIterator
 from . import base
 
@@ -27,7 +27,7 @@ class Comparison(base.Comparison):
     def compare_files(self,
                       first: FilePath,
                       second: FilePath,
-                      options: models.Comparison = models.Comparison()) -> Diff:
+                      options: config.Comparison = config.Comparison()) -> Diff:
         """
         Compute the diff of contents at two file paths and list the files changed.
 
@@ -48,7 +48,7 @@ class Comparison(base.Comparison):
     def compare(self,
                 first: FilePath,
                 second: FilePath,
-                options: models.Comparison = models.Comparison()) -> Diff:
+                options: config.Comparison = config.Comparison()) -> Diff:
         """
         Compute the diff of contents at two file paths.
 

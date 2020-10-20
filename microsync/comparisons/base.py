@@ -6,7 +6,7 @@
 """
 import abc
 
-from .. import models
+from .. import config
 from ..hints import FilePath, Str, Type, TypeVar
 
 
@@ -30,7 +30,7 @@ class Comparison(metaclass=abc.ABCMeta):
     def compare_files(self: 'CT',
                       first: FilePath,
                       second: FilePath,
-                      options: models.Comparison = models.Comparison()) -> Type[DT]:
+                      options: config.Comparison = config.Comparison()) -> Type[DT]:
         """
         Compute the diff of contents at two file paths and list the files changed.
 
@@ -45,7 +45,7 @@ class Comparison(metaclass=abc.ABCMeta):
     def compare(self: 'CT',
                 first: FilePath,
                 second: FilePath,
-                options: models.Comparison = models.Comparison()) -> Type[DT]:
+                options: config.Comparison = config.Comparison()) -> Type[DT]:
         """
         Compute the diff of contents at two file paths.
 

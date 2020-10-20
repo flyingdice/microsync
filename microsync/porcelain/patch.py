@@ -6,7 +6,7 @@
 """
 import dataclasses
 
-from .. import comparisons, meta, models, results, vcs
+from .. import config, comparisons, meta, results, vcs
 from ..hints import Str
 
 
@@ -34,7 +34,7 @@ def patch_validate(repo: vcs.Repository,
 def patch(repo: vcs.Repository,
           diff: comparisons.Diff,
           ref: Str,
-          options: models.Patch = models.VCS()) -> Patch:
+          options: config.Patch = config.VCS()) -> Patch:
     """
     Porcelain function for `patch`.
 

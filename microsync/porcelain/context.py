@@ -4,14 +4,14 @@
 
     Contains functionality for `context`.
 """
-from .. import defaults, models, templates, vcs
+from .. import config, defaults, templates, vcs
 from ..hints import Bool, StrAnyDict
 
 
 def context(repo: vcs.Repository,
             variables: StrAnyDict,
             interactive: Bool = defaults.CONTEXT_INTERACTIVE,
-            options: models.Engine = models.Engine()) -> templates.TemplateContext:
+            options: config.Engine = config.Engine()) -> templates.TemplateContext:
     """
     Porcelain function for `context`.
 

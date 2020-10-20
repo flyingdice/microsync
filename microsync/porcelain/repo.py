@@ -4,14 +4,14 @@
 
     Contains functionality for repositories.
 """
-from .. import defaults, models, vcs
+from .. import config, defaults, vcs
 from ..hints import OptionalStr, Str
 
 
 def repo(template: Str,
          path: Str,
          ref: OptionalStr = defaults.CLONE_REF,
-         options: models.VCS = models.VCS()) -> vcs.Repository:
+         options: config.VCS = config.VCS()) -> vcs.Repository:
     """
     Use the user selected version control system to retrieve a code repository
     or wrap an existing one on disk and checkout and optional reference.

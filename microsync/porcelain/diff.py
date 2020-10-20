@@ -6,13 +6,13 @@
 """
 import shutil
 
-from .. import comparisons, ignore, models
+from .. import config, comparisons, ignore
 from ..hints import FilePath
 
 
 def diff(first: FilePath,
          second: FilePath,
-         options: models.Comparison = models.Comparison()) -> comparisons.Diff:
+         options: config.Comparison = config.Comparison()) -> comparisons.Diff:
     """
     Compare contents at two file paths and generating a user
     friendly diff that can be reviewed.
@@ -28,7 +28,7 @@ def diff(first: FilePath,
 
 def diff_files(first: FilePath,
                second: FilePath,
-               options: models.Comparison = models.Comparison()) -> comparisons.Diff:
+               options: config.Comparison = config.Comparison()) -> comparisons.Diff:
     """
     Compare contents at two file paths and generating a user
     friendly list of modified files that can be reviewed.
@@ -45,7 +45,7 @@ def diff_files(first: FilePath,
 def graft(layout: FilePath,
           src: FilePath,
           dst: FilePath,
-          options: models.Comparison) -> FilePath:
+          options: config.Comparison) -> FilePath:
     """
     Based on files/directories defined in layout, copy files/directories that exist in src to dst.
 
